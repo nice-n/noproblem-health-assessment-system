@@ -1,0 +1,432 @@
+<template >
+    <div class="panel projectresponse">
+      <h2>项目响应能力</h2>
+      <div class="chart"></div>
+      <div class="panel-footer"></div>
+    </div>
+</template>
+
+<script>
+import * as echarts from 'echarts'; // 引入 echarts
+import axios from 'axios';
+export default {
+  name: "NewParticipant",
+  mounted() {
+    //图表
+    this.$nextTick(()=>{
+      // 初始化图表
+      const chartDom =document.querySelector(".projectresponse .chart");
+      const myChart = echarts.init(chartDom); // 使用 echarts 初始化
+
+      // 构造数据
+      const generateData = () => {
+        //议题解决时长
+        const d_i_resolution = [];
+        //议题响应时长
+        const i_response_time = [];
+        //议题时长
+        const i_time = [];
+        //变更请求响应时长
+        const c_r_response = [];
+        //变更请求响应时长
+        const c_r_duration = [];
+        //变更请求时长
+        const c_r_age=[];
+        //一级指标综合得分
+        const scores=[]
+        let date = new Date('2020-08-01'); // 起始日期
+
+        // 生成 2020年8月 到 2023年3月 之间每个月的数据
+        while (date <= new Date('2023-03-01')) {
+          const value1 = Math.random() * 100; // 数据 1：-10 到 20
+          const value2 = Math.random() * 100; // 数据 2：-20 到 30
+          const value3 = Math.random() * 100; // 数据 3：-15 到 25
+          const value4 = Math.random() * 100; // 数据 1：-10 到 20
+          const value5 = Math.random() * 100; // 数据 2：-20 到 30
+          const value6 = Math.random() * 100; // 数据 3：-15 到 25
+          const value7 = Math.random() * 100; // 数据 3：-15 到 25
+          d_i_resolution.push([date.getTime(), value1]);
+          i_response_time.push([date.getTime(), value2]);
+          i_time.push([date.getTime(), value3]);
+          c_r_response.push([date.getTime(), value4]);
+          c_r_duration.push([date.getTime(), value5]);
+          c_r_age.push([date.getTime(), value6]);
+          scores.push([date.getTime(), value7]);
+          date.setMonth(date.getMonth() + 1); // 日期加一个月
+        }
+        return [d_i_resolution, i_response_time, i_time,c_r_response,c_r_duration,c_r_age,scores];
+      };
+      console.log(generateData())
+      // 随机数据
+      const [d_i_resolution, i_response_time, i_time,c_r_response,c_r_duration,c_r_age,scores] = generateData();
+      // 配置项
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          position: function (pt) {
+            return [pt[0], '10%'];
+          }
+        },
+        //标签
+        legend: {
+          data: [
+            { name: '问题解决时长得分', icon: 'circle' },
+            { name: '问题响应时长得分', icon: 'circle' },
+            { name: '议题时长得分', icon: 'circle' },
+            { name: '变更请求响应时长得分', icon: 'circle' },
+            { name: '变更请求持续时长得分', icon: 'circle' },
+            { name: '变更请求时长得分', icon: 'circle' },
+            { name: '响应能力得分', icon: 'circle' },
+          ],
+          textStyle: {
+            color: '#ffffff', // 全局字体颜色
+          },
+          left: '0',
+          formatter: function (name) {
+            return name;
+          },
+          // 使用列数控制
+          width: '80%', // 控制两列宽度占总宽度的比例
+        },
+        grid: {
+          left: "0",
+          right: "4%",
+          bottom: "15%",
+          top: "25%",
+          containLabel: true,
+        },
+        //工具栏与弹窗
+        toolbox: {
+          feature: {
+            myTool: {
+              show: true,
+              title: '放大查看', // 按钮提示文字
+              icon: 'path://M512 0C229.235 0 0 229.235 0 512s229.235 512 512 512 512-229.235 512-512S794.765 0 512 0z m0 921.6C276.211 921.6 102.4 747.789 102.4 512S276.211 102.4 512 102.4 921.6 276.211 921.6 512 747.789 921.6 512 921.6z', // 自定义图标
+              onclick: function () {
+                // 创建弹窗
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.top = '50%';
+                modal.style.left = '50%';
+                modal.style.transform = 'translate(-50%, -50%)';
+                modal.style.width = '80%';
+                modal.style.height = '80%';
+                modal.style.backgroundColor = '#fff';
+                modal.style.border = '1px solid #ccc';
+                modal.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.1)';
+                modal.style.zIndex = 9999;
+                modal.style.overflow = 'hidden';
+
+                // 创建关闭按钮
+                const closeButton = document.createElement('button');
+                closeButton.textContent = '关闭';
+                closeButton.style.position = 'absolute';
+                closeButton.style.top = '10px';
+                closeButton.style.right = '10px';
+                closeButton.style.zIndex = 10000;
+                closeButton.style.padding = '5px 10px';
+                closeButton.style.backgroundColor = '#f56c6c';
+                closeButton.style.color = '#fff';
+                closeButton.style.border = 'none';
+                closeButton.style.borderRadius = '4px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.onclick = function () {
+                  document.body.removeChild(modal);
+                };
+
+                // 将关闭按钮添加到弹窗
+                modal.appendChild(closeButton);
+
+                // 创建新的 ECharts 容器
+                const chartContainer = document.createElement('div');
+                chartContainer.style.width = '100%';
+                chartContainer.style.height = '100%';
+                modal.appendChild(chartContainer);
+
+                // 将弹窗添加到页面
+                document.body.appendChild(modal);
+
+                // 初始化新的 ECharts 实例
+                const zoomChart = echarts.init(chartContainer);
+
+                // 设置新的 option 配置（去掉工具栏，标签字体改为黑色）
+                const zoomOption = JSON.parse(JSON.stringify(option)); // 深拷贝原来的配置
+                delete zoomOption.toolbox; // 移除工具栏
+                zoomOption.legend = {
+                  ...zoomOption.legend,
+                  orient: 'horizontal', // 图例横向排列
+                  left: 'center', // 图例居中对齐
+                  top:'5%',
+                  textStyle: {
+                    color: '#000', // 设置图例标签字体颜色为黑色
+                    align: 'center', // 文本居中对齐
+                  },
+                };
+                // 渲染图表
+                zoomChart.setOption(zoomOption);
+              }
+            },
+            restore: {}, // 还原
+            saveAsImage: {}, // 保存为图片
+          },
+          left: 'right', // 工具栏靠右
+          top: 'top', // 工具栏靠顶部
+        },
+        xAxis: {
+          type: 'time',
+          boundaryGap: false,
+          axisLabel: {
+            formatter: function (value) {
+              const date = new Date(value);
+              const month = date.getMonth() + 1; // 月份从0开始，所以加1
+              const year = date.getFullYear();
+              return year + '-' + (month < 10 ? '0' + month : month); // 格式为 YYYY-MM
+            },
+            interval: 0, // 设置为0，确保每个月都显示（在放大时动态调整）
+          },
+          axisTick: {
+            alignWithLabel: true, // 使刻度与标签对齐
+          },
+          minInterval: 1000 * 60 * 60 * 24 * 30, // 设置最小间隔为1个月，避免重复显示
+        },
+        yAxis: {
+          type: 'value',
+          boundaryGap: [0, '0%']
+        },
+        dataZoom: [
+          {
+            type: 'inside',
+            start: 0,
+            end: 20
+          },
+          {
+            start: 0,
+            end: 20
+          }
+        ],
+        series: [
+          {
+            name: '问题解决时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#fac858', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#fac858', // 曲线颜色
+            },
+            areaStyle: {},
+            data: d_i_resolution
+          },
+          {
+            name: '问题响应时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#5470c6', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#5470c6', // 曲线颜色
+            },
+            areaStyle: {},
+            data: i_response_time,
+          },
+          {
+            name: '议题时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#91cc75', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#91cc75', // 曲线颜色
+            },
+            areaStyle: {},
+            data: i_time,
+          },
+          {
+            name: '变更请求响应时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#fac858', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#fac858', // 曲线颜色
+            },
+            areaStyle: {},
+            data: c_r_response
+          },
+          {
+            name: '变更请求持续时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#5470c6', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#5470c6', // 曲线颜色
+            },
+            areaStyle: {},
+            data: c_r_duration,
+          },
+          {
+            name: '变更请求时长得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#91cc75', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#91cc75', // 曲线颜色
+            },
+            areaStyle: {},
+            data: c_r_age,
+          },
+          {
+            name: '响应能力得分',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle', // 数据点样式
+            symbolSize: 6, // 数据点大小
+            itemStyle: {
+              color: '#91cc75', // 数据点颜色
+            },
+            lineStyle: {
+              width: 2,
+              color: '#91cc75', // 曲线颜色
+            },
+            areaStyle: {},
+            data: scores,
+          }
+        ]
+      };
+
+      // 设置图表配置项
+      myChart.setOption(option);
+      // 监听窗口大小调整事件
+      window.addEventListener("resize", () => {
+        myChart.resize();
+      });
+    })
+  },
+  created() {
+    this.getPRData()
+  },
+  methods:{
+    //获取所点击的最新数据
+    getPRData(){
+      axios.get('http://localhost:8080/students',{
+        params: {
+          indexName: 'responseAbility',
+          projectName: 'admin',
+        },
+      })
+          .then(res => {
+            console.log(res.data);
+          })
+          .catch(error => {
+            console.error(error);
+          });
+    }
+  }
+};
+
+</script>
+
+<style scoped>
+.panel {
+  width: 100%;
+  height: 49%;
+  position: relative;
+  border: 1px solid rgba(25, 186, 139, 0.17);
+  background: rgba(255, 255, 255, 0.04) url(../assets/images/line\(1\).png);
+  padding: 0 0.1875rem 0.5rem;
+  margin-bottom: 1px;
+}
+.panel::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #02a6b5;
+  border-left: 2px solid #02a6b5;
+  border-radius: 20%;
+}
+.panel::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #02a6b5;
+  border-right: 2px solid #02a6b5;
+  border-radius: 20%;
+}
+.panel .panel-footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+}
+.panel .panel-footer::before {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #02a6b5;
+  border-left: 2px solid #02a6b5;
+  border-radius: 20%;
+}
+.panel .panel-footer::after {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #02a6b5;
+  border-right: 2px solid #02a6b5;
+  border-radius: 20%;
+}
+.panel h2 {
+  height: 0.6rem;
+  line-height: 0.6rem;
+  text-align: center;
+  color: #81E7ED;
+  font-size: 0.25rem;
+  font-weight: 600;
+}
+.panel h2 a {
+  margin: 0 0.1875rem;
+  color: #fff;
+  text-decoration: underline;
+}
+.panel .chart {
+  height: 92%;
+}
+
+</style>
