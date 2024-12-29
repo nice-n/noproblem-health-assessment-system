@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.noproblem.has.mapper.Indicators2Mapper">
+    <select id="selectIndicators2" resultType="string">
+        SELECT sli.score
+        FROM second_level_indicators sli
+                 JOIN indicators1 i1 ON sli.indicator1_id = i1.indicator1_id
+                 JOIN indicators2 i2 ON sli.indicator2_id = i2.indicator2_id
+                 JOIN projects p ON sli.project_id = p.project_id
+        WHERE i1.indicator1_name= #{indicator1_name} AND p.project_name = #{project_name};
+    </select>
+
+</mapper>
