@@ -1,6 +1,6 @@
 <template >
     <div class="panel projectresponse">
-      <h2>项目响应能力</h2>
+      <h2>响应能力</h2>
       <div class="chart"></div>
       <div class="panel-footer"></div>
     </div>
@@ -11,98 +11,137 @@ import * as echarts from 'echarts'; // 引入 echarts
 import axios from 'axios';
 export default {
   name: "NewParticipant",
+  data(){
+    return{
+      indicator1_name:'项目响应能力',
+      project_name:'sentry',
+      //默认为排名第一的数据
+      d_i_resolution:[80.48,75.13,89.72,85.26,89.66,88.98,89.87,90.45,87.72,67.21,89.4,87.72,70.3,86.52,0.0,84.0,71.51,86.94,80.38,86.73,89.98,89.93,84.52,83.58,83.53,88.46,94.12,90.87,81.11,92.6,93.23,100.0],
+      i_response_time:[100.0,91.54,52.16,46.53,32.72,8.74,6.43,13.76,17.65,25.26,20.67,13.05,6.47,14.57,1.92,11.16,14.0,0.0,15.19,42.11,46.17,52.87,81.73,93.77,87.07,82.66,87.94,80.57,72.66,67.95,62.3,68.63],
+      i_time:[99.16,97.6,97.92,94.11,98.05,93.64,89.9,93.63,97.3,79.99,90.91,95.95,74.42,90.95,0.0,91.32,91.92,95.52,93.02,89.37,94.62,87.54,86.03,91.41,94.61,96.65,97.79,96.96,97.54,98.98,99.33,100.0],
+      c_r_response:[47.87,64.86,43.35,69.38,39.21,55.59,61.24,48.0,71.08,37.62,55.67,52.23,0.0,8.33,85.74,62.72,29.17,28.23,73.77,86.44,69.01,85.52,77.73,70.77,75.19,71.93,76.2,84.7,84.92,87.04,90.41,100.0],
+      c_r_duration:[43.71,55.63,72.37,43.06,47.85,46.59,0.0,35.73,29.65,53.26,38.21,88.93,60.5,66.42,27.76,92.29,100.0,86.75,80.11,82.34,87.39,78.92,85.25,82.08,87.52,83.88,89.15,92.16,91.5,90.47,93.89,97.1],
+      c_r_age:[0.0,46.44,77.02,72.8,73.14,76.68,70.17,68.76,68.69,68.92,67.84,67.91,65.65,67.58,62.87,65.76,72.88,69.5,66.64,71.74,71.04,76.33,74.26,76.99,79.91,79.13,80.87,77.32,79.75,84.71,96.17,100.0],
+      scores:[52.11,67.51,66.15,61.78,54.89,51.08,41.58,47.37,50.74,49.86,50.37,56.14,39.32,46.18,36.14,56.57,55.08,49.04,57.38,68.99,68.7,72.86,79.88,82.74,83.38,81.26,85.19,83.5,81.26,82.4,85.32,90.65],
+      myChart:null,
+      chartData:''
+    }
+  },
+
   mounted() {
     //图表
     this.$nextTick(()=>{
-      // 初始化图表
-      const chartDom =document.querySelector(".projectresponse .chart");
-      const myChart = echarts.init(chartDom); // 使用 echarts 初始化
+      // 初始化图表,默认加载排名第一的数据
+      this.initChart()
+    })
+  },
+  created() {
+    this.$bus.$on('project-selected', this.updateProject);
+  },
+  beforeDestroy() {
+    this.$bus.$off('project-selected', this.updateProject);
+  },
+  methods:{
+    //获取所点击的项目名
+    updateProject(projectName) {
+      this.project_name = projectName;
+      console.log(projectName)
+      this.getPRData(); // 获取该项目的最新数据
+    },
+    //获取所点击的项目名获取最新响应能力得分数据
+    getPRData() {
+      // 使用 Promise.all 来等待两个请求都完成
+      Promise.all([
+        axios.get(`http://localhost:8080/indicators1/scores?indicator1_name=${this.indicator1_name}&project_name=${this.project_name}`),
+        axios.get(`http://localhost:8080/indicators2/scores?indicator1_name=${this.indicator1_name}&project_name=${this.project_name}`)
+      ])
+          .then(responses => {
+            // 第一个请求成功
+            const scoresResponse = responses[0];
+            console.log(scoresResponse.data);
+            this.scores = scoresResponse.data;
 
-      // 构造数据
-      const generateData = () => {
-        //议题解决时长
-        const d_i_resolution = [];
-        //议题响应时长
-        const i_response_time = [];
-        //议题时长
-        const i_time = [];
-        //变更请求响应时长
-        const c_r_response = [];
-        //变更请求响应时长
-        const c_r_duration = [];
-        //变更请求时长
-        const c_r_age=[];
-        //一级指标综合得分
-        const scores=[]
-        let date = new Date('2020-08-01'); // 起始日期
+            // 第二个请求成功
+            const indicatorsResponse = responses[1];
+            console.log(indicatorsResponse.data);
+            this.d_i_resolution = indicatorsResponse.data[0];
+            this.i_response_time = indicatorsResponse.data[1];
+            this.i_time = indicatorsResponse.data[2];
+            this.c_r_response = indicatorsResponse.data[3];
+            this.c_r_duration = indicatorsResponse.data[4];
+            this.c_r_age = indicatorsResponse.data[5];
 
-        // 生成 2020年8月 到 2023年3月 之间每个月的数据
-        while (date <= new Date('2023-03-01')) {
-          const value1 = Math.random() * 100; // 数据 1：-10 到 20
-          const value2 = Math.random() * 100; // 数据 2：-20 到 30
-          const value3 = Math.random() * 100; // 数据 3：-15 到 25
-          const value4 = Math.random() * 100; // 数据 1：-10 到 20
-          const value5 = Math.random() * 100; // 数据 2：-20 到 30
-          const value6 = Math.random() * 100; // 数据 3：-15 到 25
-          const value7 = Math.random() * 100; // 数据 3：-15 到 25
-          d_i_resolution.push([date.getTime(), value1]);
-          i_response_time.push([date.getTime(), value2]);
-          i_time.push([date.getTime(), value3]);
-          c_r_response.push([date.getTime(), value4]);
-          c_r_duration.push([date.getTime(), value5]);
-          c_r_age.push([date.getTime(), value6]);
-          scores.push([date.getTime(), value7]);
-          date.setMonth(date.getMonth() + 1); // 日期加一个月
-        }
-        return [d_i_resolution, i_response_time, i_time,c_r_response,c_r_duration,c_r_age,scores];
-      };
-      console.log(generateData())
-      // 随机数据
-      const [d_i_resolution, i_response_time, i_time,c_r_response,c_r_duration,c_r_age,scores] = generateData();
-      // 配置项
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          position: function (pt) {
-            return [pt[0], '10%'];
-          }
-        },
-        //标签
-        legend: {
-          data: [
-            { name: '问题解决时长得分', icon: 'circle' },
-            { name: '问题响应时长得分', icon: 'circle' },
-            { name: '议题时长得分', icon: 'circle' },
-            { name: '变更请求响应时长得分', icon: 'circle' },
-            { name: '变更请求持续时长得分', icon: 'circle' },
-            { name: '变更请求时长得分', icon: 'circle' },
-            { name: '响应能力得分', icon: 'circle' },
-          ],
-          textStyle: {
-            color: '#ffffff', // 全局字体颜色
+            // 在两个请求都完成后更新图表
+            this.updateChart();
+          })
+          .catch(error => {
+            console.error(error);
+            console.log('项目名错误');
+          });
+    },
+
+    //初始化图表
+    initChart() {
+      const chartDom = document.querySelector(".projectresponse .chart");
+      this.myChart = echarts.init(chartDom); // 初始化图表
+
+      // 从 getChartOption 获取 chart 配置
+      const option = this.getChartOption();
+
+      // 设置图表配置项
+      this.myChart.setOption(option);
+
+      // 监听窗口大小变化，调整图表尺寸
+      window.addEventListener("resize", () => {
+        this.myChart.resize();
+      });
+    },
+    //获取图标配置
+    getChartOption(){
+      return{
+          tooltip: {
+            trigger: 'axis',
+            position: function (pt) {
+              return [pt[0], '10%'];
+            }
           },
-          left: '0',
-          formatter: function (name) {
-            return name;
+          //标签
+          legend: {
+            data: [
+              { name: '问题解决时长得分', icon: 'circle' },
+              { name: '问题响应时长得分', icon: 'circle' },
+              { name: '议题时长得分', icon: 'circle' },
+              { name: '变更请求响应时长得分', icon: 'circle' },
+              { name: '变更请求持续时长得分', icon: 'circle' },
+              { name: '变更请求时长得分', icon: 'circle' },
+              { name: '响应能力得分', icon: 'circle' },
+            ],
+            textStyle: {
+              color: '#00E5FF', // 全局字体颜色
+            },
+            left: '0',
+            formatter: function (name) {
+              return name;
+            },
+            // 使用列数控制
+            width: '80%', // 控制两列宽度占总宽度的比例
           },
-          // 使用列数控制
-          width: '80%', // 控制两列宽度占总宽度的比例
-        },
-        grid: {
-          left: "0",
-          right: "4%",
-          bottom: "15%",
-          top: "25%",
-          containLabel: true,
-        },
-        //工具栏与弹窗
+          grid: {
+            left: "0",
+            right: "4%",
+            bottom: "15%",
+            top: "25%",
+            containLabel: true,
+          },
+          //工具栏与弹窗
+        // 修改工具栏的 myTool 的 onclick 函数
         toolbox: {
           feature: {
             myTool: {
               show: true,
-              title: '放大查看', // 按钮提示文字
+              title: '放大查看',
               icon: 'path://M512 0C229.235 0 0 229.235 0 512s229.235 512 512 512 512-229.235 512-512S794.765 0 512 0z m0 921.6C276.211 921.6 102.4 747.789 102.4 512S276.211 102.4 512 102.4 921.6 276.211 921.6 512 747.789 921.6 512 921.6z', // 自定义图标
-              onclick: function () {
+              onclick: () => {
                 // 创建弹窗
                 const modal = document.createElement('div');
                 modal.style.position = 'fixed';
@@ -134,7 +173,6 @@ export default {
                   document.body.removeChild(modal);
                 };
 
-                // 将关闭按钮添加到弹窗
                 modal.appendChild(closeButton);
 
                 // 创建新的 ECharts 容器
@@ -143,209 +181,196 @@ export default {
                 chartContainer.style.height = '100%';
                 modal.appendChild(chartContainer);
 
-                // 将弹窗添加到页面
                 document.body.appendChild(modal);
 
                 // 初始化新的 ECharts 实例
                 const zoomChart = echarts.init(chartContainer);
 
-                // 设置新的 option 配置（去掉工具栏，标签字体改为黑色）
-                const zoomOption = JSON.parse(JSON.stringify(option)); // 深拷贝原来的配置
-                delete zoomOption.toolbox; // 移除工具栏
+                // 从 getChartOption 获取并深拷贝配置
+                const zoomOption = JSON.parse(JSON.stringify(this.getChartOption()));
+
+                // 移除工具栏
+                delete zoomOption.toolbox;
+
+                // 更新图例配置
                 zoomOption.legend = {
                   ...zoomOption.legend,
-                  orient: 'horizontal', // 图例横向排列
-                  left: 'center', // 图例居中对齐
-                  top:'5%',
+                  orient: 'horizontal',
+                  left: 'center',
+                  top: '5%',
                   textStyle: {
-                    color: '#000', // 设置图例标签字体颜色为黑色
-                    align: 'center', // 文本居中对齐
+                    color: '#000',
+                    align: 'center',
                   },
                 };
-                // 渲染图表
+
+                // 渲染放大图表
                 zoomChart.setOption(zoomOption);
               }
             },
-            restore: {}, // 还原
-            saveAsImage: {}, // 保存为图片
+            restore: {},
+            saveAsImage: {},
           },
-          left: 'right', // 工具栏靠右
-          top: 'top', // 工具栏靠顶部
+          left: 'right', // 工具栏位置
+          top: 'top', // 工具栏位置
         },
-        xAxis: {
-          type: 'time',
-          boundaryGap: false,
-          axisLabel: {
-            formatter: function (value) {
-              const date = new Date(value);
-              const month = date.getMonth() + 1; // 月份从0开始，所以加1
-              const year = date.getFullYear();
-              return year + '-' + (month < 10 ? '0' + month : month); // 格式为 YYYY-MM
-            },
-            interval: 0, // 设置为0，确保每个月都显示（在放大时动态调整）
-          },
-          axisTick: {
-            alignWithLabel: true, // 使刻度与标签对齐
-          },
-          minInterval: 1000 * 60 * 60 * 24 * 30, // 设置最小间隔为1个月，避免重复显示
-        },
-        yAxis: {
-          type: 'value',
-          boundaryGap: [0, '0%']
-        },
-        dataZoom: [
-          {
-            type: 'inside',
-            start: 0,
-            end: 20
-          },
-          {
-            start: 0,
-            end: 20
-          }
-        ],
-        series: [
-          {
-            name: '问题解决时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#fac858', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#fac858', // 曲线颜色
-            },
-            areaStyle: {},
-            data: d_i_resolution
-          },
-          {
-            name: '问题响应时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#5470c6', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#5470c6', // 曲线颜色
-            },
-            areaStyle: {},
-            data: i_response_time,
-          },
-          {
-            name: '议题时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#91cc75', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#91cc75', // 曲线颜色
-            },
-            areaStyle: {},
-            data: i_time,
-          },
-          {
-            name: '变更请求响应时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#fac858', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#fac858', // 曲线颜色
-            },
-            areaStyle: {},
-            data: c_r_response
-          },
-          {
-            name: '变更请求持续时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#5470c6', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#5470c6', // 曲线颜色
-            },
-            areaStyle: {},
-            data: c_r_duration,
-          },
-          {
-            name: '变更请求时长得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#91cc75', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#91cc75', // 曲线颜色
-            },
-            areaStyle: {},
-            data: c_r_age,
-          },
-          {
-            name: '响应能力得分',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle', // 数据点样式
-            symbolSize: 6, // 数据点大小
-            itemStyle: {
-              color: '#91cc75', // 数据点颜色
-            },
-            lineStyle: {
-              width: 2,
-              color: '#91cc75', // 曲线颜色
-            },
-            areaStyle: {},
-            data: scores,
-          }
-        ]
-      };
 
-      // 设置图表配置项
-      myChart.setOption(option);
-      // 监听窗口大小调整事件
-      window.addEventListener("resize", () => {
-        myChart.resize();
-      });
-    })
-  },
-  created() {
-    this.getPRData()
-  },
-  methods:{
-    //获取所点击的最新数据
-    getPRData(){
-      axios.get('http://localhost:8080/students',{
-        params: {
-          indexName: 'responseAbility',
-          projectName: 'admin',
-        },
-      })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(error => {
-            console.error(error);
-          });
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: [
+              '2020-08', '2020-09', '2020-10', '2020-11', '2020-12',
+              '2021-01', '2021-02', '2021-03', '2021-04', '2021-05',
+              '2021-06', '2021-07', '2021-08', '2021-09', '2021-10',
+              '2021-11', '2021-12', '2022-01', '2022-02', '2022-03',
+              '2022-04', '2022-05', '2022-06', '2022-07', '2022-08',
+              '2022-09', '2022-10', '2022-11', '2022-12', '2023-01',
+              '2023-02', '2023-03'
+            ],
+            axisLabel:{
+              interval: 'auto', // 自动间隔
+              hideOverlap: true // 隐藏重叠
+            },
+            axisTick: {
+              alignWithLabel: true, // 使刻度与标签对齐
+            },
+            minInterval: 1000 * 60 * 60 * 24 * 30, // 设置最小间隔为1个月，避免重复显示
+          },
+          yAxis: {
+            type: 'value',
+            boundaryGap: [0, '0%']
+          },
+          dataZoom: [
+            {
+              type: 'inside',
+              start: 80,
+              end: 100
+            },
+            {
+              start: 80,
+              end: 100
+            }
+          ],
+          series: [
+            {
+              name: '问题解决时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#fac858', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#fac858', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.d_i_resolution
+            },
+            {
+              name: '问题响应时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#5470c6', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#5470c6', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.i_response_time,
+            },
+            {
+              name: '议题时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#91cc75', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#91cc75', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.i_time
+            },
+            {
+              name: '变更请求响应时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#32CD32', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#32CD32', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.c_r_response
+            },
+            {
+              name: '变更请求持续时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#9370DB', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#9370DB', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.c_r_duration,
+            },
+            {
+              name: '变更请求时长得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#FFA07A', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#FFA07A', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.c_r_age,
+            },
+            {
+              name: '响应能力得分',
+              type: 'line',
+              smooth: true,
+              symbol: 'circle', // 数据点样式
+              symbolSize: 6, // 数据点大小
+              itemStyle: {
+                color: '#ff6b6b', // 数据点颜色
+              },
+              lineStyle: {
+                width: 2,
+                color: '#ff6b6b', // 曲线颜色
+              },
+              areaStyle: {},
+              data: this.scores,
+            }
+          ]
+      }
+    },
+    //更新数据
+    updateChart() {
+      const option = this.getChartOption();
+      this.myChart.setOption(option);
     }
   }
 };

@@ -1,27 +1,28 @@
 <template>
   <div class="panel">
-    <h2>评估值</h2>
+    <h2>项目{{project_name}}的一级指标评估值</h2>
     <div class="boxs">
       <ul class="container">
         <li class="box">
           <h1 class="range">响应能力</h1>
-          <h2 class="value">95</h2>
+          <!-- 动态渲染数据 -->
+          <h2 class="value">{{ projectResponseScores }}</h2>
         </li>
         <li class="box">
           <h1 class="range">新贡献者</h1>
-          <h2 class="value">95</h2>
+          <h2 class="value">{{ newParticipantScores }}</h2>
         </li>
         <li class="box" style="width: 1.7rem;height: 1.7rem;">
           <h1 class="range">综合评估</h1>
-          <h2 class="value" style="font-size: 0.5rem !important">95</h2>
+          <h2 class="value" style="font-size: 0.5rem !important">{{ healthyScores }}</h2>
         </li>
         <li class="box">
           <h1 class="range">巴士系数</h1>
-          <h2 class="value">95</h2>
+          <h2 class="value">{{ busFactorScores }}</h2>
         </li>
         <li class="box">
           <h1 class="range">发展趋势</h1>
-          <h2 class="value">95</h2>
+          <h2 class="value">{{ developmentTrend }}</h2>
         </li>
       </ul>
     </div>
@@ -30,9 +31,49 @@
 </template>
 
 <script>
+import axios from "axios";
 export default {
   name:'AssessedValue',
+  data(){
+    return{
+      projectResponseScores:90.65,
+      newParticipantScores:61,
+      busFactorScores:100,
+      developmentTrend:84.93,
+      healthyScores:84.3,
+      project_name:'airbyte'
+    }
+  },
+  created() {
+    this.$bus.$on('project-selected', this.updateProject);
+  },
+  beforeDestroy() {
+    this.$bus.$off('project-selected', this.updateProject);
+  },
   mounted() {
+  },
+  methods:{
+    //获取所点击的项目名
+    updateProject(projectName) {
+      this.project_name = projectName;
+      console.log(projectName)
+      this.getAVdata(); // 获取该项目的最新数据
+    },
+    getAVdata(){
+      axios.get(`http://localhost:8080/project/scores?project_name=${this.project_name}`)
+          .then(res => {
+            console.log(res.data)
+            this.projectResponseScores=res.data.projectResponse
+            this.newParticipantScores=res.data.newParticipant
+            this.busFactorScores=res.data.busFactor
+            this.developmentTrend=res.data.developmentTrend
+            this.healthyScores=res.data.score
+          })
+          .catch(error => {
+            console.error(error);
+            console.log('项目名错误')
+          });
+    },
   }
 }
 </script>

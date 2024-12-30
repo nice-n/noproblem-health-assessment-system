@@ -4,6 +4,9 @@
     <div class="showTime">
       <span></span>
     </div>
+    <div class="tips">
+      <span>数据截止到23年3月</span>
+    </div>
   </div>
 </template>
 
@@ -43,8 +46,17 @@ h1 {
 }
 .showTime {
   position: absolute;
-  top: 0;
+  top: 0.1rem;
   right: 0.375rem;
+  line-height: 0.9375rem;
+  font-size: 0.25rem;
+  color: #81E7ED;
+  font-weight: 600;
+}
+.tips{
+  position: absolute;
+  top: 0.1rem;
+  left: 0.375rem;
   line-height: 0.9375rem;
   font-size: 0.25rem;
   color: #81E7ED;

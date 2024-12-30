@@ -1,6 +1,6 @@
 <template>
   <div class="panel leaderboard">
-    <h2>排行榜</h2>
+    <h2>2023年3月项目健康评估值排行榜</h2>
     <div class="chart">
       <div class="scroll-container"
            @wheel="onMouseWheel"
@@ -16,11 +16,11 @@
           </tr>
           </thead>
           <tbody ref="tableBody">
-          <tr v-for="(item, index) in tableData" :key="index" @click="handleRowClick(item)">
-            <td>{{ item.index }}</td>
+          <tr v-for="(item) in tableData" :key="item.index" @click="handleRowClick(item)">
+            <td>{{ item.firstNumber}}</td>
             <td>{{ item.projectName }}</td>
-            <td>{{ item.evaluation }}</td>
-            <td>{{ item.ranking }}</td>
+            <td>{{ item.score }}</td>
+            <td>{{ item.lastNumber }}</td>
           </tr>
           </tbody>
         </table>
@@ -35,95 +35,116 @@
 </template>
 
 <script>
-
+import axios from "axios";
 export default {
   name:'Leaderboard',
   data(){
     return{
-      tableData: [
-        { index: 1, projectName: "项目A", evaluation: 89, ranking: 1 },
-        { index: 2, projectName: "项目B", evaluation: 76, ranking: 2 },
-        { index: 3, projectName: "项目C", evaluation: 62, ranking: 3 },
-        { index: 4, projectName: "项目D", evaluation: 48, ranking: 4 },
-        { index: 5, projectName: "项目A", evaluation: 89, ranking: 1 },
-        { index: 6, projectName: "项目B", evaluation: 76, ranking: 2 },
-        { index: 7, projectName: "项目C", evaluation: 62, ranking: 3 },
-        { index: 8, projectName: "项目D", evaluation: 48, ranking: 4 },
-        { index: 9, projectName: "项目A", evaluation: 89, ranking: 1 },
-        { index: 10, projectName: "项目B", evaluation: 76, ranking: 2 },
-        { index: 11, projectName: "项目C", evaluation: 62, ranking: 3 },
-        { index: 12, projectName: "项目D", evaluation: 48, ranking: 4 },
-        { index: 13, projectName: "项目A", evaluation: 89, ranking: 1 },
-        { index: 14, projectName: "项目B", evaluation: 76, ranking: 2 },
-        { index: 15, projectName: "项目C", evaluation: 62, ranking: 3 },
-        { index: 16, projectName: "项目D", evaluation: 48, ranking: 4 },
-      ],
+      tableData: [],
       scrollInterval: null,
       isScrolling: false, // 防止滚轮和自动滚动冲突
     }
   },
   mounted() {
-    this.startScrollAnimation();
+
+  },
+  created() {
+    this.getLBlist()
   },
   beforeDestroy() {
-    clearInterval(this.scrollInterval);
+    clearInterval(this.scrollInterval)
   },
   methods: {
     startScrollAnimation() {
+      this.$nextTick(() => {
         const tableBody = this.$refs.tableBody;
+        if (!tableBody || !tableBody.children[0]) {
+          console.error("Table body or rows not found!");
+          return;
+        }
+
         const rowHeight = tableBody.children[0].offsetHeight;
 
         this.scrollInterval = setInterval(() => {
           if (!this.isScrolling) {
-            this.scrollTable(-rowHeight); // 向上滚动
+            this.scrollTable(-rowHeight);
           }
         }, 2000);
-      },
+      });
+    },
     scrollTable(distance) {
-        const tableBody = this.$refs.tableBody;
-        tableBody.style.transition = "transform 0.5s ease";
-        tableBody.style.transform = `translateY(${distance}px)`;
+      const tableBody = this.$refs.tableBody;
 
-        setTimeout(() => {
-          tableBody.style.transition = "none";
-          if (distance < 0) {
-            // 向上滚动
-            const firstRow = tableBody.children[0];
-            tableBody.appendChild(firstRow.cloneNode(true));
-            tableBody.removeChild(firstRow);
-          } else {
-            // 向下滚动
-            const lastRow = tableBody.children[tableBody.children.length - 1];
-            tableBody.insertBefore(lastRow.cloneNode(true), tableBody.children[0]);
-            tableBody.removeChild(lastRow);
-          }
-          tableBody.style.transform = "translateY(0)";
-          this.isScrolling = false; // 允许继续动画
-        }, 500);
-      },
-    //滑动鼠标进行滚动
+      this.isScrolling = true;
+
+      let newTableData = [...this.tableData];
+      if (distance < 0) {
+        const firstRow = newTableData.shift();
+        newTableData.push(firstRow);
+      } else {
+        const lastRow = newTableData.pop();
+        newTableData.unshift(lastRow);
+      }
+      this.tableData = newTableData;
+
+      tableBody.style.transition = "transform 0.5s ease";
+      tableBody.style.transform = `translateY(${distance}px)`;
+
+      setTimeout(() => {
+        tableBody.style.transition = "none";
+        tableBody.style.transform = "translateY(0)";
+        this.isScrolling = false;
+      }, );
+    },
     onMouseWheel(event) {
-        if (this.isScrolling) return; // 防止动画冲突
-        this.isScrolling = true;
+      if (this.isScrolling) return;
 
-        const tableBody = this.$refs.tableBody;
-        const rowHeight = tableBody.children[0].offsetHeight;
+      const tableBody = this.$refs.tableBody;
+      const rowHeight = tableBody.children[0]?.offsetHeight || 0;
 
+      if (rowHeight > 0) {
         if (event.deltaY > 0) {
-          // 向下滚动
           this.scrollTable(-rowHeight);
         } else {
-          // 向上滚动
           this.scrollTable(rowHeight);
         }
-      },
-
+      } else {
+        console.error("Row height is not available for scrolling!");
+      }
+    },
     //获取所点击的项目名
     handleRowClick(item) {
       console.log('选中的项目名:', item.projectName);
-      // 你可以在这里执行你想要的操作，比如跳转或显示更多信息
+      this.$bus.$emit('project-selected', item.projectName)
     },
+    //获取排行榜数据
+    getLBlist() {
+      axios.get(`http://localhost:8080/rank/scores`)
+          .then(res => {
+            // 增加两个递增的数字
+            let startIndex = 1; // 用于最前面的递增数字
+            let endIndex = 1;   // 用于最后面的递增数字
+
+            this.tableData = res.data.map(item => {
+              const newItem = {
+                firstNumber: startIndex++, // 最前面的递增数字
+                ...item, // 原始对象的数据
+                lastNumber: endIndex++ // 最后面的递增数字
+              };
+              return newItem;
+            });
+
+            this.$nextTick(() => {
+              this.startScrollAnimation(); // 确保数据处理后再初始化滚动
+            });
+          })
+          .catch(error => {
+            console.error(error);
+          });
     }
+
+
+  }
 }
 </script>
 
@@ -204,6 +225,7 @@ export default {
   height: 92%;
   position: relative;
   z-index: 1; /* 表格处于上方 */
+  padding-bottom: 0.5rem;
 }
 .map1,
 .map2,

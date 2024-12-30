@@ -7,32 +7,58 @@
 </template>
 
 <script>
-import * as echarts from 'echarts'; // 引入 echarts
+import * as echarts from 'echarts';
+import axios from "axios";
 export default {
   name:'BusFactor',
+  data(){
+    return{
+      indicator1_name:'巴士系数',
+      project_name:'airbyte',
+      //默认为排名第一的数据
+      chartData:[11,3,19,0,3,23,11,26,19,26,15,26,23,38,30,30,23,23,23,30,42,46,53,65,50,69,57,65,65,73,92,100],
+      myChart:null
+    }
+  },
+  created() {
+    this.$bus.$on('project-selected', this.updateProject);
+  },
   mounted() {
     this.$nextTick(()=>{
+      // 初始化图表,默认加载排名第一的数据
+      this.initChart();
+    })
+  },
+  beforeDestroy() {
+    this.$bus.$off('project-selected', this.updateProject);
+  },
+  methods:{
+    //获取所点击的项目名
+    updateProject(projectName) {
+      this.project_name = projectName;
+      console.log(projectName)
+      this.getBFData(); // 获取该项目的最新数据
+    },
+    //获取所点击的项目名获取最新公交系数得分数据
+    getBFData(){
+      axios.get(`http://localhost:8080/indicators1/scores?indicator1_name=${this.indicator1_name}&project_name=${this.project_name}`)
+          .then(res => {
+            console.log(res.data)
+            this.chartData=res.data
+            this.updateChart(); // 更新图表
+          })
+          .catch(error => {
+            console.error(error);
+            console.log('项目名错误')
+          });
+    },
+    //初始化图表
+    initChart(){
       // 初始化图表
       const chartDom =document.querySelector(".busfactor .chart");
-      const myChart = echarts.init(chartDom); // 使用 echarts 初始化
+      this.myChart = echarts.init(chartDom); // 使用 echarts 初始化
 
-      // 构造数据
-      const generateData = () => {
-        //一级指标巴士系数综合得分
-        const scores=[]
-        let date = new Date('2020-08-01'); // 起始日期
 
-        // 生成 2020年8月 到 2023年3月 之间每个月的数据
-        while (date <= new Date('2023-03-01')) {
-          const value1 = Math.random() * 100; // 数据 1：-10 到 20
-          scores.push([date.getTime(), value1]);
-          date.setMonth(date.getMonth() + 1); // 日期加一个月
-        }
-        return scores;
-      };
-
-      // 随机数据
-      const scores = generateData();
       // 配置项
       const option = {
         tooltip: {
@@ -70,7 +96,7 @@ export default {
             { name: '巴士系数得分', icon: 'circle' },
           ],
           textStyle: {
-            color: '#ffffff', // 全局字体颜色
+            color: '#00E5FF', // 全局字体颜色
           },
         },
         grid: {
@@ -167,7 +193,8 @@ export default {
               const year = date.getFullYear();
               return year + '-' + (month < 10 ? '0' + month : month); // 格式为 YYYY-MM
             },
-            interval: 0, // 设置为0，确保每个月都显示（在放大时动态调整）
+            interval: 'auto', // 设置为0，确保每个月都显示（在放大时动态调整）
+            hideOverlap: true // 隐藏重叠
           },
           axisTick: {
             alignWithLabel: true, // 使刻度与标签对齐
@@ -181,12 +208,12 @@ export default {
         dataZoom: [
           {
             type: 'inside',
-            start: 0,
-            end: 20
+            start: 80,
+            end: 100
           },
           {
-            start: 0,
-            end: 20
+            start: 80,
+            end: 100
           }
         ],
         series: [
@@ -204,19 +231,42 @@ export default {
               color: '#fac858', // 曲线颜色
             },
             areaStyle: {},
-            data: scores
+            data: this.generateData()
           },
         ]
       };
 
       // 设置图表配置项
-      myChart.setOption(option);
+      this.myChart.setOption(option);
       // 监听窗口大小调整事件
       window.addEventListener("resize", () => {
-        myChart.resize();
+        this.myChart.resize();
       });
-    })
-
+    },
+    //生成数据
+    generateData() {
+      let i = 0;
+      let date = new Date('2020-08-01'); // 起始日期
+      const scores = [];
+      // 生成 2020年8月 到 2023年3月 之间每个月的数据
+      while (date <= new Date('2023-03-01')) {
+        const value1 = this.chartData[i];
+        scores.push([date.getTime(), value1]);
+        i++;
+        date.setMonth(date.getMonth() + 1); // 日期加一个月
+      }
+      return scores;
+    },
+    //更新图表
+    updateChart() {
+      if (this.myChart) {
+        const option = this.myChart.getOption();
+        option.series[0].data = this.generateData(); // 更新数据
+        this.myChart.setOption(option); // 更新图表
+      } else {
+        console.error("Chart instance is not initialized");
+      }
+    },
   }
 }
 </script>
