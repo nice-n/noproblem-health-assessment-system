@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.noproblem.has.mapper.RankMapper">
+    <!-- Define a resultMap -->
+    <resultMap id="RankResultMap" type="com.noproblem.has.entity.Rank">
+        <result property="projectName" column="project_name" />
+        <result property="score" column="score" />
+    </resultMap>
+    <!-- Example query using the resultMap -->
+    <select id="findRank" resultMap="RankResultMap">
+        SELECT project_name,score
+        FROM projects
+        ORDER BY score desc
+    </select>
+
+</mapper>

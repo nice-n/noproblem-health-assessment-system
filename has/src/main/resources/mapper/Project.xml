@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.noproblem.has.mapper.ProjectMapper">
+    <!-- Define a resultMap -->
+    <resultMap id="ProjectResultMap" type="com.noproblem.has.entity.Project">
+        <result property="score" column="score" />
+        <result property="projectResponse" column="project_response" />
+        <result property="newParticipant" column="new_participant" />
+        <result property="busFactor" column="bus_factor" />
+        <result property="developmentTrend" column="development_trend" />
+    </resultMap>
+
+    <!-- Example query using the resultMap -->
+    <select id="findAllProjects" resultMap="ProjectResultMap">
+        SELECT score,project_response,new_participant,bus_factor,development_trend
+        FROM projects
+        WHERE project_name= #{project_name}
+    </select>
+
+</mapper>

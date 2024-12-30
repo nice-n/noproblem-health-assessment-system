@@ -11,6 +11,11 @@ import lombok.Data;
  */
 @Data
 public class Project {
-    private int project_id;
-    private String project_name;
+    private Double score;
+    private Double projectResponse;
+    private Double newParticipant;
+    private Double busFactor;
+    private Double developmentTrend;// 改为String类型以匹配数据库中的char类型
 }
+
+

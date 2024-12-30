@@ -13,13 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * @Author：ysl
- * @Package：com.noproblem.has.controller
- * @Project：noproblem
- * @name：IndicatorsController
- * @Date：2024/12/29 16:51
- */
+
 @RestController
 @RequestMapping("/indicators2")
 public class Indicators2Controller {
@@ -52,12 +46,7 @@ public class Indicators2Controller {
         }
         double[][] scoresArray = floatSmallArrays.toArray(new double[0][]);
 
-        // 打印结果
-        for (double[] array : scoresArray) {
-            System.out.println(Arrays.toString(array));
-        }
-
-//         假设这是在某个方法中，返回ResponseEntity对象
+        // 假设这是在某个方法中，返回ResponseEntity对象
          return ResponseEntity.ok(scoresArray);
     }
 }
