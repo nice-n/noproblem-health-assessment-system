@@ -4,7 +4,8 @@
     <div class="chart">
       <div class="scroll-container"
            @wheel="onMouseWheel"
-
+           @mouseenter="stopScrollAnimation"
+           @mouseleave="startScrollAnimation"
       >
         <table class="custom-table">
           <thead>
@@ -37,25 +38,25 @@
 <script>
 import axios from "axios";
 export default {
-  name:'Leaderboard',
-  data(){
-    return{
+  name: "Leaderboard",
+  data() {
+    return {
       tableData: [],
       scrollInterval: null,
       isScrolling: false, // 防止滚轮和自动滚动冲突
-    }
+    };
   },
   mounted() {
-
   },
   created() {
-    this.getLBlist()
+    this.getLBlist();
   },
   beforeDestroy() {
-    clearInterval(this.scrollInterval)
+    this.stopScrollAnimation(); // 清理滚动动画
   },
   methods: {
     startScrollAnimation() {
+      this.stopScrollAnimation(); // 确保不会重复启动
       this.$nextTick(() => {
         const tableBody = this.$refs.tableBody;
         if (!tableBody || !tableBody.children[0]) {
@@ -71,6 +72,10 @@ export default {
           }
         }, 2000);
       });
+    },
+    stopScrollAnimation() {
+      clearInterval(this.scrollInterval); // 清除定时器
+      this.scrollInterval = null;
     },
     scrollTable(distance) {
       const tableBody = this.$refs.tableBody;
@@ -94,7 +99,7 @@ export default {
         tableBody.style.transition = "none";
         tableBody.style.transform = "translateY(0)";
         this.isScrolling = false;
-      }, );
+      }, 0); // 注意这里的时间要与 CSS 动画时间一致
     },
     onMouseWheel(event) {
       if (this.isScrolling) return;
@@ -112,24 +117,25 @@ export default {
         console.error("Row height is not available for scrolling!");
       }
     },
-    //获取所点击的项目名
+    // 获取所点击的项目名
     handleRowClick(item) {
-      console.log('选中的项目名:', item.projectName);
-      this.$bus.$emit('project-selected', item.projectName)
+      console.log("选中的项目名:", item.projectName);
+      this.$bus.$emit("project-selected", item.projectName);
     },
-    //获取排行榜数据
+    // 获取排行榜数据
     getLBlist() {
-      axios.get(`http://localhost:8080/rank/scores`)
-          .then(res => {
+      axios
+          .get(`http://localhost:8080/rank/scores`)
+          .then((res) => {
             // 增加两个递增的数字
             let startIndex = 1; // 用于最前面的递增数字
-            let endIndex = 1;   // 用于最后面的递增数字
+            let endIndex = 1; // 用于最后面的递增数字
 
-            this.tableData = res.data.map(item => {
+            this.tableData = res.data.map((item) => {
               const newItem = {
                 firstNumber: startIndex++, // 最前面的递增数字
                 ...item, // 原始对象的数据
-                lastNumber: endIndex++ // 最后面的递增数字
+                lastNumber: endIndex++, // 最后面的递增数字
               };
               return newItem;
             });
@@ -138,12 +144,10 @@ export default {
               this.startScrollAnimation(); // 确保数据处理后再初始化滚动
             });
           })
-          .catch(error => {
+          .catch((error) => {
             console.error(error);
           });
-    }
-
-
+    },
   }
 }
 </script>
