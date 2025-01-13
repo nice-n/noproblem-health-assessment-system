@@ -28,12 +28,17 @@
 ## 项目发展趋势值HProject_development_trend
 项目发展趋势指特定时间内的方向与变化，对项目成败意义重大。趋势值稳定增长是项目健康标志，意味着按计划推进、创造价值。把握趋势利于管理者提前制定策略，优化资源配置，提升项目竞争力与适应性。项目发展趋势值Hproject_development_trend体现在项目活跃度，新增贡献者数量，新增forks数量，新增follows数量，新增star数量。
 ![图片2](https://github.com/user-attachments/assets/6a50b32c-96e0-403d-8b65-242ad3267f4a)
+
 经过计算获得项目发展趋势指标的二级指标权重
+
 ![111](https://github.com/user-attachments/assets/6cd64c63-0a43-457e-9c30-79a5eaffcc9b)
 ## 开源项目健康系数
 基于开源大数据与客观评估，构建开源项目健康评估体系，帮助管理者管理多个开源项目。从 oppendigger 获取数据，将项目响应能力，新贡献者，巴士系数，项目发展趋势这几个一级指标经熵值赋权法和映射函数转换结合成综合指标，综合评判开源项目健康程度。
+
 ![图片3](https://github.com/user-attachments/assets/b7760b17-cbb7-429b-8e11-3c7cc406cc12)
+
 经过计算获得开源健康系数的一级指标权重
+
 ![屏幕截图 2025-01-13 212023](https://github.com/user-attachments/assets/c5bd8b50-3b35-430f-9e0a-24f967554ee8)
 # 七、项目展示
 ## 整体大屏
